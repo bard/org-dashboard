@@ -170,10 +170,11 @@ See Info node `(org) Breaking down tasks'."
        (make-goal-label (goal)
                         (truncate-string-to-width goal 25 0 nil "…"))
        (make-progress-bar (percent)
-                          (concat (propertize 
-                                   (make-string (/ percent 3) ?█)
-                                   'font-lock-face '(:foreground "green"))
-                                  (make-string (- (/ 100 3) (/ percent 3)) ?\s)))
+                          (let ((color (org-dashboard--progress-color percent)))
+                            (concat (propertize 
+                                     (make-string (/ percent 3) ?█)
+                                     'font-lock-face (list :foreground color))
+                                    (make-string (- (/ 100 3) (/ percent 3)) ?\s))))
        (make-link (file goal goal-label)
                   (format "[[%s::*%s][%s]]" file goal goal-label)))
 
@@ -208,6 +209,12 @@ See Info node `(org) Breaking down tasks'."
                              heading
                              progress
                              (buffer-file-name))))))
+
+(defun org-dashboard--progress-color (percent)
+  (cond ((< percent 33) "red")
+        ((< percent 66) "dark green")
+        ((< percent 100) "forest green")
+        (t "green")))
 
 (provide 'org-dashboard)
 ;;; org-dashboard.el ends here
