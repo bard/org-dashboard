@@ -104,6 +104,19 @@ category defaults to the org file name."
   :type 'boolean)
 
 ;;;###autoload
+(defun org-dashboard-display ()
+  (interactive)
+  (with-current-buffer (get-buffer-create "*Org Dashboard*")
+    (setq buffer-read-only nil)
+    (erase-buffer)
+    (org-mode)
+    (save-excursion
+      (org-dashboard--insert-progress-summary
+       (org-dashboard--collect-progress-agenda-files)))
+    (setq buffer-read-only t)
+    (display-buffer (current-buffer))))
+
+;;;###autoload
 (defun org-dblock-write:block-dashboard (params)
   "Generate a progress report inside an org dynamic block.
 
@@ -117,9 +130,12 @@ e.g.:
 
 See Info node `(org) Breaking down tasks'."
   (org-dashboard--insert-progress-summary
-   (cl-loop for file in (org-agenda-files)
-            append (with-current-buffer (find-file-noselect file)
-                     (org-dashboard--collect-progress)))))
+   (org-dashboard--collect-progress-agenda-files)))
+
+(defun org-dashboard--collect-progress-agenda-files ()
+  (cl-loop for file in (org-agenda-files)
+           append (with-current-buffer (find-file-noselect file)
+                    (org-dashboard--collect-progress-current-buffer))))
 
 (defun org-dashboard--search-heading-with-progress ()
   (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
@@ -179,7 +195,7 @@ See Info node `(org) Breaking down tasks'."
                                   progress-bar
                                   percent-indicator))))))
 
-(defun org-dashboard--collect-progress ()
+(defun org-dashboard--collect-progress-current-buffer ()
   (save-excursion
     (goto-char (point-min))
     (org-refresh-category-properties)
