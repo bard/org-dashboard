@@ -8,49 +8,42 @@
 ;; Keywords: outlines, calendar
 ;; URL: http://github.com/bard/org-dashboard
 
-;; This file is not part of GNU Emacs. However, it is distributed
-;; under the same license.
-;;
-;; GNU Emacs is free software: you can redistribute it and/or modify
+;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; GNU Emacs is distributed in the hope that it will be useful,
+;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 ;;; Commentary:
 
-;; Visually summarize progress information in org-mode files.
-
-;; org-dashboard makes a new dynamic block available in org
-;; files. When the block is updated, progress information is fetched
-;; from files in `org-agenda-files' and used to generate a visual
-;; progress summary with progress bars and hyperlinked labels.
-
-;; For example, if one of your `org-agenda-files' contains the
-;; following:
+;; Org Dashboard provides a visual summary of progress on projects and
+;; tasks.
+;;
+;; For example, if an org file (known by `org-agenda-files') contains
+;; the following:
 ;;
 ;;     * Project: Better Health
-;;    :PROPERTIES:
-;;    :CATEGORY: health
-;;    :END:
+;;     :PROPERTIES:
+;;     :CATEGORY: health
+;;     :END:
 ;;
 ;;     ** Milestones
-;;     *** [33%] run 10 km/week
+;;     *** [66%] run 10 km/week
 ;;     **** TODO learn proper warmup
-;;     **** DONE look for jogging partner
-;;     **** TODO run 10 minutes on monday
+;;     **** DONE look for a jogging partner
+;;     **** DONE run 10 minutes on monday
 ;;     
 ;;     * Project: Super Widget
-;;    :PROPERTIES:
-;;    :CATEGORY: widget
-;;    :END:
+;;     :PROPERTIES:
+;;     :CATEGORY: widget
+;;     :END:
 ;;
 ;;     ** Milestones
 ;;     *** [1/6] release 0.1
@@ -58,32 +51,37 @@
 ;;     **** TODO create github project
 ;;     **** TODO add readme
 ;;     **** TODO publish
-;;     
-;; And any org file contains the following block:
 ;;
-;;     #+BEGIN: block-display-dashboard
+;; Then `M-x org-dashboard-display' generates the following report and
+;; displays it in a new buffer:
+;;
+;;     health                run 10 km/week [██████████████████████           ]  66%
+;;     widget                   0.1 release [██████                           ]  18%
+;;
+;; A dynamic block form is also supported. Writing the following in an
+;; org file and then running `org-dblock-update', or placing the
+;; cursor on the first line of the block and then typing `C-c C-c',
+;; will insert the same report shown above into the block:
+;;
+;;     #+BEGIN: block-dashboard
 ;;     #+END:
+
+;; Notes:
 ;;
-;; Updating the block (`C-c C-c' anywhere on its first line) will
-;; search agenda files for headings that include a "progress cookie"
-;; (e.g. [33%], [1/6]) and generate the following:
+;; Labels link back to the trees where they were found.
 ;;
-;;    #+BEGIN: block-display-dashboard
+;; The color of the progress bar is (naively, for now) chosen based on
+;; the progress value, from dark red to bright green.
 ;;
-;;    health                run 10 km/week [███████████                      ]  33%
-;;    widget                   0.1 release [██████                           ]  18%
-;;
-;;    #+END:
-;;
-;; Labels link back to the trees where they were found. The first
-;; column displays categories; you can turn categories off by
+;; The first column displays categories. You can turn this off by
 ;; customizing the `org-dashboard-display-category' option. Note that,
 ;; if not set per-tree through a property or per-file through a
 ;; keyword, the category defaults to the file name without extension.
 
-;; This module was inspired by Zach Peter's "A Dashboard for your
-;; Life"
-;; (http://thehelpfulhacker.net/2014/07/19/a-dashboard-for-your-life-a-minimal-goal-tracker-using-org-mode-go-and-git/)
+;; Related work:
+;;
+;; This module was inspired by Zach Peter's [A Dashboard for your
+;; Life](http://thehelpfulhacker.net/2014/07/19/a-dashboard-for-your-life-a-minimal-goal-tracker-using-org-mode-go-and-git/).
 
 ;;; Code:
 
