@@ -133,7 +133,8 @@ See Info node `(org) Breaking down tasks'."
 (defun org-dashboard--collect-progress-agenda-files ()
   (cl-loop for file in (org-agenda-files)
            append (with-current-buffer (find-file-noselect file)
-                    (org-dashboard--collect-progress-current-buffer))))
+                    (org-with-wide-buffer
+                     (org-dashboard--collect-progress-current-buffer)))))
 
 (defun org-dashboard--search-heading-with-progress ()
   (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
