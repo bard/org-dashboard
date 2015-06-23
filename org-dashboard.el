@@ -1,4 +1,4 @@
-;;; org-dashboard --- Visually summarize progress in org files
+;;; org-dashboard.el --- Visually summarize progress in org files
 
 ;; Copyright (C) 2015 Massimiliano Mirra
 
