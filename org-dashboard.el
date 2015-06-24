@@ -7,6 +7,7 @@
 ;; Maintainer: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Keywords: outlines, calendar
 ;; URL: http://github.com/bard/org-dashboard
+;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -86,7 +87,7 @@
 ;;; Code:
 
 (require 'org)
-(require 'cl)
+(require 'cl-lib)
 
 (defgroup org-dashboard nil
   "Options concerning org dashboard."
