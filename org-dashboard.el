@@ -137,16 +137,19 @@ See Info node `(org) Breaking down tasks'."
                     (org-with-wide-buffer
                      (org-dashboard--collect-progress-current-buffer)))))
 
+;; Arithmetic error
 (defun org-dashboard--search-heading-with-progress ()
-  (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
+  (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]")
+        (item-re (concat (org-item-re) "\\(\\[[- X]\\]\\)?\\(.*\\)"))) ; capture the checkbox and item text
     (cl-labels ((read-progress ()
-                               (let ((progress-percent (match-string 2))
+                               (let* ((progress-percent (match-string 2))
                                      (progress-ratio-done (match-string 3))
-                                     (progress-ratio-total (match-string 4)))
-                                 (if progress-percent
-                                     (string-to-number progress-percent)
-                                   (/ (* 100 (string-to-number progress-ratio-done))
-                                      (string-to-number progress-ratio-total)))))
+                                     (progress-ratio-total (match-string 4))
+                                     (progress-ratio-total-num (string-to-number progress-ratio-total)))
+                                 (cond
+                                   (progress-percent (string-to-number progress-percent))
+                                   ((= 0 progress-ratio-total-num) 0)
+                                   (t (/ (* 100 (string-to-number progress-ratio-done)) progress-ratio-total-num)))))
                 (trim-string (string)
                              (replace-regexp-in-string
                               "^ +\\| +$" "" string))
@@ -156,33 +159,58 @@ See Info node `(org) Breaking down tasks'."
                 (clean-heading (heading)
                                (trim-string
                                 (remove-cookie
-                                 (substring-no-properties heading)))))
+                                 (substring-no-properties heading))))
+                (read-heading (elem-type)
+                              (cond
+                                ((eq :item elem-type) (save-excursion
+                                                            (org-beginning-of-item)
+                                                            (looking-at item-re)
+                                                            (match-string 7)))
+                                ((eq :heading elem-type) (org-get-heading t t))
+                                (t (save-excursion
+                                     (beginning-of-line)
+                                     (looking-at ".*")
+                                     (format "%s %s" elem-type (match-string 0)))))))
       
       (and (re-search-forward cookie-re nil t)
            (let* ((progress-percent (read-progress))
-                  (heading (clean-heading (org-get-heading t t))))
-             (cons heading progress-percent))))))
+                  (elem-type (cond
+                               ((org-at-item-p) :item)
+                               ((org-at-table-p) :table)
+                               ((org-at-heading-p) :heading)
+                               (t :unknown)))
+                  (heading (clean-heading (read-heading elem-type))))
+             (list heading progress-percent elem-type))))))
 
 (defun org-dashboard--insert-progress-summary (progress-summary)
   (cl-labels
       ((make-category-label (category)
                             (truncate-string-to-width category 10 0 ?\s "…"))
+       (get-linkable-text (goal) ;; based on org-link-display-format
+                          (if (string-match org-bracket-link-analytic-regexp goal)
+                            (if (match-end 5)
+                              (match-string 5 goal)
+                              (match-string 3 goal))
+                            goal))
        (make-goal-label (goal)
-                        (truncate-string-to-width goal 25 0 nil "…"))
+                        (truncate-string-to-width (org-link-display-format goal) 25 0 nil "…"))
        (make-progress-bar (percent)
                           (let ((color (org-dashboard--progress-color percent)))
                             (concat (propertize 
                                      (make-string (/ percent 3) ?█)
                                      'font-lock-face (list :foreground color))
                                     (make-string (- (/ 100 3) (/ percent 3)) ?\s))))
-       (make-link (file goal goal-label)
-                  (format "[[%s::*%s][%s]]" file goal goal-label)))
+       (make-link (file goal goal-label elem-type)
+                  (cond
+                    ((eq :item    elem-type) (format "[[%s::%s][%s]]"  file (get-linkable-text goal) goal-label))
+                    ((eq :heading elem-type) (format "[[%s::*%s][%s]]" file (get-linkable-text goal) goal-label))
+                    (t                       (format "%s"              goal-label)))))
 
     (insert "\n")
-    (cl-loop for (category goal-heading percent file) in progress-summary
+    (cl-loop for (category goal-heading percent elem-type file) in progress-summary
              do (let* ((category-label (make-category-label category))
                        (goal-label (make-goal-label goal-heading))
-                       (goal-link (make-link file goal-heading goal-label))
+                       (goal-link (make-link file goal-heading goal-label elem-type))
                        (goal-label-padding (make-string (- 25 (length goal-label)) ?\s))
                        (progress-bar (make-progress-bar percent))
                        (percent-indicator (format "%3d%%" percent)))
@@ -201,13 +229,14 @@ See Info node `(org) Breaking down tasks'."
     (goto-char (point-min))
     (org-refresh-category-properties)
     
-    (cl-loop for (heading . progress) = (org-dashboard--search-heading-with-progress)
+    (cl-loop for (heading progress elem-type) = (org-dashboard--search-heading-with-progress)
              while heading
              collect (let ((category (substring-no-properties
                                       (org-get-category))))
                        (list category
                              heading
                              progress
+                             elem-type
                              (buffer-file-name))))))
 
 (defun org-dashboard--progress-color (percent)
