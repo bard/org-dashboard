@@ -139,14 +139,18 @@ See Info node `(org) Breaking down tasks'."
 
 (defun org-dashboard--search-heading-with-progress ()
   (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
-    (cl-labels ((read-progress ()
-                               (let ((progress-percent (match-string 2))
-                                     (progress-ratio-done (match-string 3))
-                                     (progress-ratio-total (match-string 4)))
-                                 (if progress-percent
-                                     (string-to-number progress-percent)
-                                   (/ (* 100 (string-to-number progress-ratio-done))
-                                      (string-to-number progress-ratio-total)))))
+    (cl-labels ((match-number (n)
+                              (and (match-string n)
+                                   (string-to-number (match-string n))))
+                (read-progress ()
+                               (let ((progress-percent (match-number 2))
+                                     (progress-ratio-done (match-number 3))
+                                     (progress-ratio-total (match-number 4)))
+                                 (or progress-percent
+                                     (if (zerop progress-ratio-total)
+                                         0
+                                       (/ (* 100 progress-ratio-done)
+                                          progress-ratio-total)))))
                 (trim-string (string)
                              (replace-regexp-in-string
                               "^ +\\| +$" "" string))
