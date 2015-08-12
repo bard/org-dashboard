@@ -151,6 +151,14 @@ See Info node `(org) Breaking down tasks'."
                                          0
                                        (/ (* 100 progress-ratio-done)
                                           progress-ratio-total)))))
+                (search-heading-with-cookie ()
+                                            (let ((pos (re-search-forward
+                                                        cookie-re nil t)))
+                                              (if pos
+                                                  (if (save-match-data (org-at-heading-p))
+                                                      pos
+                                                    (search-heading-with-cookie))
+                                                nil)))
                 (trim-string (string)
                              (replace-regexp-in-string
                               "^ +\\| +$" "" string))
@@ -162,7 +170,7 @@ See Info node `(org) Breaking down tasks'."
                                 (remove-cookie
                                  (substring-no-properties heading)))))
       
-      (and (re-search-forward cookie-re nil t)
+      (and (search-heading-with-cookie)
            (let* ((progress-percent (read-progress))
                   (heading (clean-heading (org-get-heading t t))))
              (cons heading progress-percent))))))
