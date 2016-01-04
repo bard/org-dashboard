@@ -102,6 +102,11 @@ Note that, if not set with per-file or per-tree properties,
 category defaults to the org file name."
   :type 'boolean)
 
+(defcustom org-dashboard-omit-completed
+  nil
+  "Whether to display progress bar for completed projects."
+  :type 'boolean)
+
 ;;;###autoload
 (defun org-dashboard-display ()
   (interactive)
@@ -199,14 +204,16 @@ See Info node `(org) Breaking down tasks'."
                        (progress-bar (make-progress-bar percent))
                        (percent-indicator (format "%3d%%" percent)))
 
-                  (insert (format "%s %s%s [%s] %s\n"
-                                  (if org-dashboard-progress-display-category
-                                      category-label
-                                    "")
-                                  goal-label-padding
-                                  goal-link
-                                  progress-bar
-                                  percent-indicator))))))
+                  (unless (and (eq 100 percent)
+                               org-dashboard-omit-completed)
+                    (insert (format "%s %s%s [%s] %s\n"
+                                    (if org-dashboard-progress-display-category
+                                        category-label
+                                      "")
+                                    goal-label-padding
+                                    goal-link
+                                    progress-bar
+                                    percent-indicator)))))))
 
 (defun org-dashboard--collect-progress-current-buffer ()
   (save-excursion
