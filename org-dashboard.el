@@ -195,7 +195,7 @@ See Info node `(org) Breaking down tasks'."
              do (let* ((category-label (make-category-label category))
                        (goal-label (make-goal-label goal-heading))
                        (goal-link (make-link file goal-heading goal-label))
-                       (goal-label-padding (make-string (- 25 (length goal-label)) ?\s))
+                       (goal-label-padding (make-string (- 25 (string-width goal-label)) ?\s))
                        (progress-bar (make-progress-bar percent))
                        (percent-indicator (format "%3d%%" percent)))
 
