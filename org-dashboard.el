@@ -27,7 +27,7 @@
 ;; Org Dashboard provides a visual summary of progress on projects and
 ;; tasks.
 ;;
-;; For example, if an org file (known by `org-agenda-files') contains
+;; For example, if an org file (known by `org-dashboard-files') contains
 ;; the following:
 ;;
 ;;     * Project: Better Health
@@ -94,17 +94,25 @@
   :tag "Org Dashboard"
   :group 'org)
 
+(defcustom org-dashboard-files
+  org-agenda-files
+  "Files to search for progress items."
+  :type '(repeat :tag "List of files and directories" file)
+  :group 'org-dashboard)
+
 (defcustom org-dashboard-progress-display-category
   t
   "Whether to display categories in a progress report.
 
 Note that, if not set with per-file or per-tree properties,
 category defaults to the org file name."
+  :group 'org-dashboard
   :type 'boolean)
 
 (defcustom org-dashboard-omit-completed
   nil
   "Whether to display progress bar for completed projects."
+  :group 'org-dashboard
   :type 'boolean)
 
 ;;;###autoload
@@ -116,7 +124,7 @@ category defaults to the org file name."
     (org-mode)
     (save-excursion
       (org-dashboard--insert-progress-summary
-       (org-dashboard--collect-progress-agenda-files)))
+       (org-dashboard--collect-progress)))
     (setq buffer-read-only t)
     (display-buffer (current-buffer))))
 
@@ -125,7 +133,7 @@ category defaults to the org file name."
   "Generate a progress report inside an org dynamic block.
 
 Progress information is retrieved by searching files in
-`org-agenda-files' for headings containing a \"progress cookie\",
+`org-dashboard-files' for headings containing a \"progress cookie\",
 e.g.:
 
   ** [50%] release v0.1
@@ -134,10 +142,10 @@ e.g.:
 
 See Info node `(org) Breaking down tasks'."
   (org-dashboard--insert-progress-summary
-   (org-dashboard--collect-progress-agenda-files)))
+   (org-dashboard--collect-progress)))
 
-(defun org-dashboard--collect-progress-agenda-files ()
-  (cl-loop for file in (org-agenda-files)
+(defun org-dashboard--collect-progress ()
+  (cl-loop for file in org-dashboard-files
            append (with-current-buffer (find-file-noselect file)
                     (org-with-wide-buffer
                      (org-dashboard--collect-progress-current-buffer)))))
