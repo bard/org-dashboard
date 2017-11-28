@@ -1,13 +1,16 @@
+# org-dashboard - Visually summarize progress in org files
+
 Org Dashboard provides a visual summary of progress on projects and
 tasks.
 
-For example, if an org file (known by `org-agenda-files`) contains
+For example, if an org file (known by `org-dashboard-files`) contains
 the following:
 
     * Project: Better Health
     :PROPERTIES:
     :CATEGORY: health
     :END:
+
     ** Milestones
     *** [66%] run 10 km/week
     **** TODO learn proper warmup
@@ -18,6 +21,7 @@ the following:
     :PROPERTIES:
     :CATEGORY: widget
     :END:
+
     ** Milestones
     *** [1/6] release 0.1
     **** DONE git import
@@ -28,8 +32,8 @@ the following:
 Then <kbd>M-x org-dashboard-display</kbd> generates the following report and
 displays it in a new buffer:
 
-    health                run 10 km/week [██████████████████████           ]  66%
-    widget                   0.1 release [██████                           ]  18%
+    health                run 10 km/week [||||||||||||||||||||||           ]  66%
+    widget                   0.1 release [||||||                           ]  18%
 
 A dynamic block form is also supported. Writing the following in an
 org file and then running `org-dblock-update`, or placing the
