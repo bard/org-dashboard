@@ -67,9 +67,19 @@
 ;;     #+BEGIN: block-dashboard
 ;;     #+END:
 
+;; Configuration
+;;
+;; You can customize the following variables:
+;;
+;; - `org-dashboard-files' (defaults to `org-agenda-files')
+;; - `org-dashboard-show-category'
+;; - `org-dashboard-omit-completed'
+;; - `org-dashboard-omit-not-started'
+;; - `org-dashboard-omit-tags'
+
 ;; Notes:
 ;;
-;; Labels link back to the trees where they were found.
+;; Labels link back to the trees where they were found. 
 ;;
 ;; The color of the progress bar is (naively, for now) chosen based on
 ;; the progress value, from dark red to bright green.
@@ -83,6 +93,12 @@
 ;;
 ;; This module was inspired by Zach Peter's [A Dashboard for your
 ;; Life](http://thehelpfulhacker.net/2014/07/19/a-dashboard-for-your-life-a-minimal-goal-tracker-using-org-mode-go-and-git/).
+
+;; Contributions:
+;;
+;; - one feature or fix per pull request
+;; - provide an example of the problem it addresses
+;; - please adhere to the existing code style
 
 ;;; Code:
 
@@ -101,7 +117,7 @@
   :type '(repeat :tag "List of files and directories" file)
   :group 'org-dashboard)
 
-(defcustom org-dashboard-progress-display-category
+(defcustom org-dashboard-show-category
   t
   "Whether to display categories in a progress report.
 
@@ -237,7 +253,7 @@ See Info node `(org) Breaking down tasks'."
                   (unless (and (eq 100 percent)
                                org-dashboard-omit-completed)
                     (insert (format "%s %s%s [%s] %s\n"
-                                    (if org-dashboard-progress-display-category
+                                    (if org-dashboard-show-category
                                         category-label
                                       "")
                                     goal-label-padding
