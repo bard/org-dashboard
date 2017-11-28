@@ -148,7 +148,12 @@ See Info node `(org) Breaking down tasks'."
   (cl-loop for file in org-dashboard-files
            append (with-current-buffer (find-file-noselect file)
                     (org-with-wide-buffer
-                     (org-dashboard--collect-progress-current-buffer)))))
+                     (cl-remove-if (lambda (entry)
+                                     (let ((progress (nth 2 entry))
+                                           (tags (nth 4 entry)))
+                                       (or (member "archive" tags)
+                                           (eq 0 progress))))
+                                   (org-dashboard--collect-progress-current-buffer))))))
 
 (defun org-dashboard--search-heading-with-progress ()
   (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
@@ -235,7 +240,8 @@ See Info node `(org) Breaking down tasks'."
                        (list category
                              heading
                              progress
-                             (buffer-file-name))))))
+                             (buffer-file-name)
+                             (org-get-tags))))))
 
 (defun org-dashboard--progress-color (percent)
   (cond ((< percent 33) "red")
