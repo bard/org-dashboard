@@ -156,7 +156,9 @@ See Info node `(org) Breaking down tasks'."
                                    (org-dashboard--collect-progress-current-buffer))))))
 
 (defun org-dashboard--search-heading-with-progress ()
-  (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]"))
+  (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]")
+	(priority-re "\\[#[ABCD]\\]")
+	)
     (cl-labels ((match-number (n)
                               (and (match-string n)
                                    (string-to-number (match-string n))))
@@ -183,10 +185,14 @@ See Info node `(org) Breaking down tasks'."
                 (remove-cookie (heading)
                                (replace-regexp-in-string
                                 cookie-re "" heading))
+		(remove-priority (heading)
+				 (replace-regexp-in-string
+				  priority-re "" heading))
                 (clean-heading (heading)
                                (trim-string
-                                (remove-cookie
-                                 (substring-no-properties heading)))))
+                                (remove-priority
+				 (remove-cookie
+				  (substring-no-properties heading))))))
       
       (and (search-heading-with-cookie)
            (let* ((progress-percent (read-progress))
