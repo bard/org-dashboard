@@ -88,6 +88,7 @@
 
 (require 'org)
 (require 'cl-lib)
+(require 'subr-x)
 
 (defgroup org-dashboard nil
   "Options concerning org dashboard."
@@ -111,9 +112,20 @@ category defaults to the org file name."
 
 (defcustom org-dashboard-omit-completed
   nil
-  "Whether to display progress bar for completed projects."
+  "Whether to display an entry for completed projects."
   :group 'org-dashboard
   :type 'boolean)
+
+(defcustom org-dashboard-omit-not-started
+  nil
+  "Whether to display an entry for projects at 0% progress."
+  :group 'org-dashboard
+  :type 'boolean)
+
+(defcustom org-dashboard-omit-tags
+  nil
+  "If an entry has any of these tags (e.g. \"archive\"), it is omitted."
+  :type '(repeat string))
 
 ;;;###autoload
 (defun org-dashboard-display ()
@@ -151,14 +163,15 @@ See Info node `(org) Breaking down tasks'."
                      (cl-remove-if (lambda (entry)
                                      (let ((progress (nth 2 entry))
                                            (tags (nth 4 entry)))
-                                       (or (member "archive" tags)
-                                           (eq 0 progress))))
+                                       (or (and org-dashboard-omit-tags
+                                                (cl-intersection tags org-dashboard-omit-tags :test 'equal))
+                                           (and org-dashboard-omit-not-started
+                                                (eq 0 progress)))))
                                    (org-dashboard--collect-progress-current-buffer))))))
 
 (defun org-dashboard--search-heading-with-progress ()
   (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]")
-	(priority-re "\\[#[ABCD]\\]")
-	)
+	(priority-re "\\[#[ABCD]\\]"))
     (cl-labels ((match-number (n)
                               (and (match-string n)
                                    (string-to-number (match-string n))))
@@ -179,9 +192,6 @@ See Info node `(org) Breaking down tasks'."
                                                       pos
                                                     (search-heading-with-cookie))
                                                 nil)))
-                (trim-string (string)
-                             (replace-regexp-in-string
-                              "^ +\\| +$" "" string))
                 (remove-cookie (heading)
                                (replace-regexp-in-string
                                 cookie-re "" heading))
@@ -189,10 +199,11 @@ See Info node `(org) Breaking down tasks'."
 				 (replace-regexp-in-string
 				  priority-re "" heading))
                 (clean-heading (heading)
-                               (trim-string
-                                (remove-priority
-				 (remove-cookie
-				  (substring-no-properties heading))))))
+                               (thread-first heading
+                                 (substring-no-properties)
+                                 (remove-cookie)
+                                 (remove-priority)
+                                 (string-trim))))
       
       (and (search-heading-with-cookie)
            (let* ((progress-percent (read-progress))
