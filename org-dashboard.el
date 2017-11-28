@@ -1,6 +1,6 @@
 ;;; org-dashboard.el --- Visually summarize progress in org files
 
-;; Copyright (C) 2015 Massimiliano Mirra
+;; Copyright (C) 2015-2017 Massimiliano Mirra
 
 ;; Author: Massimiliano Mirra <hyperstruct@gmail.com>
 ;; Version: 1.0
