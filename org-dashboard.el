@@ -56,8 +56,8 @@
 ;; Then `M-x org-dashboard-display' generates the following report and
 ;; displays it in a new buffer:
 ;;
-;;     health                run 10 km/week [██████████████████████           ]  66%
-;;     widget                   0.1 release [██████                           ]  18%
+;;     health                run 10 km/week [||||||||||||||||||||||           ]  66%
+;;     widget                   0.1 release [||||||                           ]  18%
 ;;
 ;; A dynamic block form is also supported. Writing the following in an
 ;; org file and then running `org-dblock-update', or placing the
@@ -189,9 +189,9 @@ See Info node `(org) Breaking down tasks'."
        (make-progress-bar (percent)
                           (let ((color (org-dashboard--progress-color percent)))
                             (concat (propertize 
-                                     (make-string (/ percent 3) ?█)
+                                     (make-string (/ percent 4) ?|)
                                      'font-lock-face (list :foreground color))
-                                    (make-string (- (/ 100 3) (/ percent 3)) ?\s))))
+                                    (make-string (- (/ 100 4) (/ percent 4)) ?\s))))
        (make-link (file goal goal-label)
                   (format "[[%s::*%s][%s]]" file goal goal-label)))
 
