@@ -177,8 +177,8 @@ See Info node `(org) Breaking down tasks'."
            append (with-current-buffer (find-file-noselect file)
                     (org-with-wide-buffer
                      (cl-remove-if (lambda (entry)
-                                     (let ((progress (nth 2 entry))
-                                           (tags (nth 4 entry)))
+                                     (let ((progress (plist-get entry :progress-percent))
+                                           (tags (plist-get entry :tags)))
                                        (or (and org-dashboard-omit-tags
                                                 (cl-intersection tags org-dashboard-omit-tags :test 'equal))
                                            (and org-dashboard-omit-not-started
@@ -232,34 +232,38 @@ See Info node `(org) Breaking down tasks'."
                             (truncate-string-to-width category 10 0 ?\s "…"))
        (make-goal-label (goal)
                         (truncate-string-to-width goal 25 0 nil "…"))
-       (make-progress-bar (percent)
-                          (let ((color (org-dashboard--progress-color percent)))
+       (make-progress-bar (progress-percent)
+                          (let ((color (org-dashboard--progress-color progress-percent)))
                             (concat (propertize 
-                                     (make-string (/ percent 4) ?|)
+                                     (make-string (/ progress-percent 4) ?|)
                                      'font-lock-face (list :foreground color))
-                                    (make-string (- (/ 100 4) (/ percent 4)) ?\s))))
-       (make-link (file goal goal-label)
-                  (format "[[%s::*%s][%s]]" file goal goal-label)))
+                                    (make-string (- (/ 100 4) (/ progress-percent 4)) ?\s))))
+       (make-link (target label)
+                  (format "[[%s][%s]]" target label)))
 
     (insert "\n")
-    (cl-loop for (category goal-heading percent file) in progress-summary
-             do (let* ((category-label (make-category-label category))
-                       (goal-label (make-goal-label goal-heading))
-                       (goal-link (make-link file goal-heading goal-label))
-                       (goal-label-padding (make-string (- 25 (string-width goal-label)) ?\s))
-                       (progress-bar (make-progress-bar percent))
-                       (percent-indicator (format "%3d%%" percent)))
+    (cl-loop for entry in progress-summary
+             do (cl-destructuring-bind
+                    (&key category heading id progress-percent filename tags)
+                    entry
+                  (let* ((category-label (make-category-label category))
+                         (goal-label (make-goal-label heading))
+                         (goal-link (make-link (or id (concat filename "::*" heading))
+                                               goal-label))
+                         (goal-label-padding (make-string (- 25 (string-width goal-label)) ?\s))
+                         (progress-bar (make-progress-bar progress-percent))
+                         (percent-indicator (format "%3d%%" progress-percent)))
 
-                  (unless (and (eq 100 percent)
-                               org-dashboard-omit-completed)
-                    (insert (format "%s %s%s [%s] %s\n"
-                                    (if org-dashboard-show-category
-                                        category-label
-                                      "")
-                                    goal-label-padding
-                                    goal-link
-                                    progress-bar
-                                    percent-indicator)))))))
+                    (unless (and (eq 100 progress-percent)
+                                 org-dashboard-omit-completed)
+                      (insert (format "%s %s%s [%s] %s\n"
+                                      (if org-dashboard-show-category
+                                          category-label
+                                        "")
+                                      goal-label-padding
+                                      goal-link
+                                      progress-bar
+                                      percent-indicator))))))))
 
 (defun org-dashboard--collect-progress-current-buffer ()
   (save-excursion
@@ -270,11 +274,12 @@ See Info node `(org) Breaking down tasks'."
              while heading
              collect (let ((category (substring-no-properties
                                       (org-get-category))))
-                       (list category
-                             heading
-                             progress
-                             (buffer-file-name)
-                             (org-get-tags))))))
+                       (list :category category
+                             :heading heading
+                             :id (org-id-get)
+                             :progress-percent progress
+                             :filename (buffer-file-name)
+                             :tags (org-get-tags))))))
 
 (defun org-dashboard--progress-color (percent)
   (cond ((< percent 33) "red")
