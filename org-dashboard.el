@@ -67,7 +67,7 @@
 ;;     #+BEGIN: block-dashboard
 ;;     #+END:
 
-;; Configuration
+;; Configuration:
 ;;
 ;; You can customize the following variables:
 ;;
@@ -93,15 +93,12 @@
 ;; The color of the progress bar is (naively, for now) chosen based on
 ;; the progress value, from dark red to bright green.
 ;;
-;; The first column displays categories. You can turn this off by
-;; customizing the `org-dashboard-display-category' option. Note that,
-;; if not set per-tree through a property or per-file through a
+;; If not set per-tree through a property or per-file through a
 ;; keyword, the category defaults to the file name without extension.
-;;
 ;; To set category on a per-file basis, you can add the following at
 ;; the bottom of the org file:
 ;;
-;;   #+CATEGORY: xyz
+;;    #+CATEGORY: xyz
 
 ;; Related work:
 ;;
