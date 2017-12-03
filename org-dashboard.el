@@ -71,11 +71,20 @@
 ;;
 ;; You can customize the following variables:
 ;;
-;; - `org-dashboard-files' (defaults to `org-agenda-files')
-;; - `org-dashboard-show-category'
-;; - `org-dashboard-omit-completed'
-;; - `org-dashboard-omit-not-started'
-;; - `org-dashboard-omit-tags'
+;; - `org-dashboard-files': list of files to search for progress entries; defaults to `org-agenda-files'
+;; - `org-dashboard-show-category': whether to show or not the project category
+;; - `org-dashboard-filter': a function that decides whether an entry should be displayed or not
+;;
+;; For example, to avoid displaying entries that are finished
+;; (progress = 100), not started (progress = 0), or are tagged with
+;; "archive", use the following:
+;;
+;;    (defun my/org-dashboard-filter (entry)
+;;      (and (> (plist-get entry :progress-percent) 0)
+;;           (< (plist-get entry :progress-percent) 100)
+;;           (not (member "archive" (plist-get entry :tags)))))
+;;
+;;    (setq org-dashboard-filter 'my/org-dashboard-filter)
 
 ;; Notes:
 ;;
@@ -88,6 +97,11 @@
 ;; customizing the `org-dashboard-display-category' option. Note that,
 ;; if not set per-tree through a property or per-file through a
 ;; keyword, the category defaults to the file name without extension.
+;;
+;; To set category on a per-file basis, you can add the following at
+;; the bottom of the org file:
+;;
+;;   #+CATEGORY: xyz
 
 ;; Related work:
 ;;
@@ -126,22 +140,10 @@ category defaults to the org file name."
   :group 'org-dashboard
   :type 'boolean)
 
-(defcustom org-dashboard-omit-completed
-  nil
-  "Whether to display an entry for completed projects."
+(defcustom org-dashboard-filter nil
+  "Function to use to filter progress entries."
   :group 'org-dashboard
-  :type 'boolean)
-
-(defcustom org-dashboard-omit-not-started
-  nil
-  "Whether to display an entry for projects at 0% progress."
-  :group 'org-dashboard
-  :type 'boolean)
-
-(defcustom org-dashboard-omit-tags
-  nil
-  "If an entry has any of these tags (e.g. \"archive\"), it is omitted."
-  :type '(repeat string))
+  :type 'function)
 
 ;;;###autoload
 (defun org-dashboard-display ()
@@ -172,59 +174,16 @@ See Info node `(org) Breaking down tasks'."
   (org-dashboard--insert-progress-summary
    (org-dashboard--collect-progress)))
 
-(defun org-dashboard--collect-progress ()
-  (cl-loop for file in org-dashboard-files
-           append (with-current-buffer (find-file-noselect file)
-                    (org-with-wide-buffer
-                     (cl-remove-if (lambda (entry)
-                                     (let ((progress (plist-get entry :progress-percent))
-                                           (tags (plist-get entry :tags)))
-                                       (or (and org-dashboard-omit-tags
-                                                (cl-intersection tags org-dashboard-omit-tags :test 'equal))
-                                           (and org-dashboard-omit-not-started
-                                                (eq 0 progress)))))
-                                   (org-dashboard--collect-progress-current-buffer))))))
+(defvar org-dashboard--cookie-re
+  "\\[[0-9]+\\(%\\|/[0-9]+\\)\\]")
 
-(defun org-dashboard--search-heading-with-progress ()
-  (let ((cookie-re "\\[\\(\\([0-9]+\\)%\\|\\([0-9]+\\)/\\([0-9]+\\)\\)\\]")
-	(priority-re "\\[#[ABCD]\\]"))
-    (cl-labels ((match-number (n)
-                              (and (match-string n)
-                                   (string-to-number (match-string n))))
-                (read-progress ()
-                               (let ((progress-percent (match-number 2))
-                                     (progress-ratio-done (match-number 3))
-                                     (progress-ratio-total (match-number 4)))
-                                 (or progress-percent
-                                     (if (zerop progress-ratio-total)
-                                         0
-                                       (/ (* 100 progress-ratio-done)
-                                          progress-ratio-total)))))
-                (search-heading-with-cookie ()
-                                            (let ((pos (re-search-forward
-                                                        cookie-re nil t)))
-                                              (if pos
-                                                  (if (save-match-data (org-at-heading-p))
-                                                      pos
-                                                    (search-heading-with-cookie))
-                                                nil)))
-                (remove-cookie (heading)
-                               (replace-regexp-in-string
-                                cookie-re "" heading))
-		(remove-priority (heading)
-				 (replace-regexp-in-string
-				  priority-re "" heading))
-                (clean-heading (heading)
-                               (thread-first heading
-                                 (substring-no-properties)
-                                 (remove-cookie)
-                                 (remove-priority)
-                                 (string-trim))))
-      
-      (and (search-heading-with-cookie)
-           (let* ((progress-percent (read-progress))
-                  (heading (clean-heading (org-get-heading t t))))
-             (cons heading progress-percent))))))
+(defun org-dashboard--collect-progress ()
+  (cl-remove-if-not
+   org-dashboard-filter
+   (cl-loop for file in org-dashboard-files
+            append (with-current-buffer (find-file-noselect file)
+                     (org-with-wide-buffer
+                      (org-dashboard--collect-progress-current-buffer))))))
 
 (defun org-dashboard--insert-progress-summary (progress-summary)
   (cl-labels
@@ -254,32 +213,43 @@ See Info node `(org) Breaking down tasks'."
                          (progress-bar (make-progress-bar progress-percent))
                          (percent-indicator (format "%3d%%" progress-percent)))
 
-                    (unless (and (eq 100 progress-percent)
-                                 org-dashboard-omit-completed)
-                      (insert (format "%s %s%s [%s] %s\n"
-                                      (if org-dashboard-show-category
-                                          category-label
-                                        "")
-                                      goal-label-padding
-                                      goal-link
-                                      progress-bar
-                                      percent-indicator))))))))
+                    (insert (format "%s %s%s [%s] %s\n"
+                                    (if org-dashboard-show-category
+                                        category-label
+                                      "")
+                                    goal-label-padding
+                                    goal-link
+                                    progress-bar
+                                    percent-indicator)))))))
 
 (defun org-dashboard--collect-progress-current-buffer ()
   (save-excursion
     (goto-char (point-min))
     (org-refresh-category-properties)
-    
-    (cl-loop for (heading . progress) = (org-dashboard--search-heading-with-progress)
-             while heading
-             collect (let ((category (substring-no-properties
-                                      (org-get-category))))
-                       (list :category category
-                             :heading heading
-                             :id (org-id-get)
-                             :progress-percent progress
-                             :filename (buffer-file-name)
-                             :tags (org-get-tags))))))
+    (cl-loop while (re-search-forward org-dashboard--cookie-re nil t)
+             if (org-at-heading-p)
+             collect (list :category (substring-no-properties (org-get-category))
+                           :heading (org-dashboard--get-heading-text)
+                           :id (org-id-get)
+                           :progress-percent (org-dashboard--get-heading-progress)
+                           :filename (buffer-file-name)
+                           :tags (org-get-tags)))))
+
+(defun org-dashboard--get-heading-text ()
+  (string-trim
+   (replace-regexp-in-string org-dashboard--cookie-re
+                             ""
+                             (nth 4 (org-heading-components)))))
+
+(defun org-dashboard--get-heading-progress ()
+  (let* ((heading-with-cookie (nth 4 (org-heading-components)))
+         (_ (string-match org-dashboard--cookie-re (nth 4 (org-heading-components))))
+         (cookie (substring heading-with-cookie 0 (match-end 0))))
+    (cond ((string-match "\\([0-9]+\\)%" cookie)
+           (string-to-number (match-string 1 cookie)))
+          ((string-match "\\([0-9]+\\)/\\([0-9]+\\)" cookie)
+           (/ (* 100 (string-to-number (match-string 1 cookie)))
+              (string-to-number (match-string 2 cookie)))))))
 
 (defun org-dashboard--progress-color (percent)
   (cond ((< percent 33) "red")
