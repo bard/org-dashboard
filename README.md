@@ -74,7 +74,7 @@ keyword, the category defaults to the file name without extension.
 To set category on a per-file basis, you can add the following at
 the bottom of the org file:
 
-   #+CATEGORY: xyz
+    #+CATEGORY: xyz
 
 ## Related work
 
