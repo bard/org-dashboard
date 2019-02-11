@@ -49,6 +49,8 @@ You can customize the following variables:
 
 - `org-dashboard-files`: list of files to search for progress entries; defaults to `org-agenda-files`
 - `org-dashboard-show-category`: whether to show or not the project category
+- `org-dashboard-category-label-width`: the number of characters that will be shown of the category label, if `org-dashboard-show-category` is true
+- `org-dashboard-goal-label-width`: the number of characters that will be shown of the goal label
 - `org-dashboard-filter`: a function that decides whether an entry should be displayed or not
 
 For example, to avoid displaying entries that are finished
@@ -61,6 +63,21 @@ For example, to avoid displaying entries that are finished
               (not (member "archive" (plist-get entry :tags)))))
 
        (setq org-dashboard-filter 'my/org-dashboard-filter)
+       
+You may wish to add the org-dashboard to the top of your org-agenda view via:
+
+
+      (defun my-org-agenda-dashboard ()
+        (insert
+        (concat
+          (propertize
+          "Dashboard\n" 'face 'org-agenda-structure)))
+        (org-dashboard--insert-progress-summary
+        (org-dashboard--collect-progress))
+        (insert "\n"))
+
+      ;; This hook runs first in the agenda (and before it is set to read-only)
+      (add-hook 'org-agenda-mode-hook 'my-org-agenda-dashboard)
 
 ## Notes
 

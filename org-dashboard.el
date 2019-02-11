@@ -137,6 +137,16 @@ category defaults to the org file name."
   :group 'org-dashboard
   :type 'boolean)
 
+(defcustom org-dashboard-category-label-width 10
+  "Width in characters of the column where category label is displayed."
+  :group 'org-dashboard
+  :type 'integer)
+
+(defcustom org-dashboard-goal-label-width 25
+  "Width in characters of the column where goal label is displayed."
+  :group 'org-dashboard
+  :type 'integer)
+
 (defcustom org-dashboard-filter nil
   "Function to use to filter progress entries."
   :group 'org-dashboard
@@ -185,9 +195,9 @@ See Info node `(org) Breaking down tasks'."
 (defun org-dashboard--insert-progress-summary (progress-summary)
   (cl-labels
       ((make-category-label (category)
-                            (truncate-string-to-width category 10 0 ?\s "…"))
+                            (truncate-string-to-width category org-dashboard-category-label-width 0 ?\s "…"))
        (make-goal-label (goal)
-                        (truncate-string-to-width goal 25 0 nil "…"))
+                        (truncate-string-to-width goal org-dashboard-goal-label-width 0 nil "…"))
        (make-progress-bar (progress-percent)
                           (let ((color (org-dashboard--progress-color progress-percent)))
                             (concat (propertize 
@@ -207,7 +217,9 @@ See Info node `(org) Breaking down tasks'."
                          (goal-link (make-link (if id (concat "id:" id)
                                                  (concat filename "::*" heading))
                                                goal-label))
-                         (goal-label-padding (make-string (- 25 (string-width goal-label)) ?\s))
+                         (goal-label-padding (make-string (- org-dashboard-goal-label-width
+                                                             (string-width goal-label))
+                                                          ?\s))
                          (progress-bar (make-progress-bar progress-percent))
                          (percent-indicator (format "%3d%%" progress-percent)))
 
